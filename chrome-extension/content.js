@@ -105,7 +105,7 @@ class ThirdPartyDomainTracker {
       
       const timeout = setTimeout(() => {
         this.removeDomainTag(baseDomain);
-      }, 30000);
+      }, 5000);
       existingTag.timeout = timeout;
     } else {
       await this.createNewTag(baseDomain, fullDomain, resourceType);
@@ -114,7 +114,7 @@ class ThirdPartyDomainTracker {
       if (tag) {
         const timeout = setTimeout(() => {
           this.removeDomainTag(baseDomain);
-        }, 30000);
+        }, 5000);
         tag.timeout = timeout;
       }
     }
