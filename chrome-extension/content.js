@@ -2,19 +2,14 @@ class ThirdPartyDomainTracker {
   constructor() {
     this.container = null;
     this.isEnabled = true;
-    this.debugMode = false;
+    this.debugMode = true;
     
-    // Producer-Consumer Queue Architecture
-    this.domainQueue = [];                    // FIFO queue for domain events
-    this.processingInterval = null;           // Consumer timer
-    this.processingRate = 50;                 // Process queue every 50ms
-    
-    // Consumer-only state (single-threaded access)
+    // Domain state management (Chrome runtime handles single-threading)
     this.displayedDomains = new Map();        // Currently displayed domains
     this.domainTimeouts = new Map();          // Timeout IDs for each domain
     this.subdomainCounts = new Map();         // Subdomain tracking per base domain
     
-    // Shared resources (read-only after init)
+    // Shared resources
     this.faviconCache = new Map();
     this.colorClasses = ['color-orange', 'color-vista-bleu', 'color-amande', 'color-bleu-oxford'];
     
@@ -24,7 +19,6 @@ class ThirdPartyDomainTracker {
   init() {
     this.createContainer();
     this.setupMessageListener();
-    this.startQueueConsumer();
     this.checkEnabledState();
   }
 
@@ -38,8 +32,13 @@ class ThirdPartyDomainTracker {
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === 'THIRD_PARTY_DOMAIN' && this.isEnabled) {
-        // PRODUCER: Enqueue domain event (thread-safe)
-        this.enqueueDomainEvent(message.domain, message.fullDomain, message.resourceType);
+        // Direct synchronous consumer processing
+        this.processDomainEvent({
+          baseDomain: message.domain,
+          fullDomain: message.fullDomain,
+          resourceType: message.resourceType,
+          timestamp: Date.now()
+        });
       }
     });
 
@@ -61,54 +60,8 @@ class ThirdPartyDomainTracker {
     });
   }
 
-  // =================== PRODUCER METHODS (Multi-threaded safe) ===================
+  // =================== DOMAIN PROCESSING (Chrome runtime single-threaded) ===================
   
-  enqueueDomainEvent(baseDomain, fullDomain, resourceType) {
-    if (!this.isEnabled) return;
-    
-    const domainEvent = {
-      baseDomain: baseDomain,
-      fullDomain: fullDomain,
-      resourceType: resourceType,
-      timestamp: Date.now()
-    };
-    
-    // Thread-safe enqueue operation
-    this.domainQueue.push(domainEvent);
-    
-    if (this.debugMode) {
-      console.log(`[TPD Producer] Enqueued: ${baseDomain} (queue size: ${this.domainQueue.length})`);
-    }
-  }
-
-  // =================== CONSUMER METHODS (Single-threaded) ===================
-  
-  startQueueConsumer() {
-    // Single consumer thread via setInterval
-    this.processingInterval = setInterval(() => {
-      this.processQueueItem();
-    }, this.processingRate);
-    
-    if (this.debugMode) {
-      console.log(`[TPD Consumer] Started with ${this.processingRate}ms interval`);
-    }
-  }
-
-  processQueueItem() {
-    if (!this.isEnabled || this.domainQueue.length === 0) {
-      return;
-    }
-    
-    // FIFO dequeue - single consumer, no race conditions
-    const domainEvent = this.domainQueue.shift();
-    
-    if (this.debugMode) {
-      console.log(`[TPD Consumer] Processing: ${domainEvent.baseDomain} (queue remaining: ${this.domainQueue.length})`);
-    }
-    
-    this.processDomainEvent(domainEvent);
-  }
-
   processDomainEvent(domainEvent) {
     const { baseDomain, fullDomain, resourceType } = domainEvent;
     
@@ -137,10 +90,9 @@ class ThirdPartyDomainTracker {
     subdomains.add(fullDomain);
     
     // Update counter only if new subdomain
-    if (subdomains.size > previousSize) {
-      existingDomain.count++;
-      this.updateDomainCounter(baseDomain, existingDomain);
-    }
+    existingDomain.count++;
+    this.updateDomainCounter(baseDomain, existingDomain);
+    
     
     // Set fresh timeout
     this.setDomainTimeout(baseDomain);
@@ -148,14 +100,14 @@ class ThirdPartyDomainTracker {
 
   createNewDomain(baseDomain, fullDomain, resourceType) {
     if (this.debugMode) {
-      console.log(`[TPD Consumer] Creating new domain: ${baseDomain}`);
+      console.log(`[TPD] Creating new domain: ${baseDomain}`);
     }
     
     try {
       // Create domain tag synchronously with placeholder icon
       const tagElement = this.createDomainTag(baseDomain, fullDomain, resourceType);
       
-      // Register domain in consumer state immediately
+      // Register domain in state immediately
       this.displayedDomains.set(baseDomain, {
         element: tagElement,
         count: 1,
@@ -172,7 +124,7 @@ class ThirdPartyDomainTracker {
       this.loadFaviconInBackground(baseDomain, tagElement);
       
     } catch (error) {
-      console.error(`[TPD Consumer] Error creating domain ${baseDomain}:`, error);
+      console.error(`[TPD] Error creating domain ${baseDomain}:`, error);
     }
   }
 
@@ -219,7 +171,7 @@ class ThirdPartyDomainTracker {
     countSpan.textContent = domainData.count;
     
     if (this.debugMode) {
-      console.log(`[TPD Consumer] Updated counter for ${baseDomain}: ${domainData.count}`);
+      console.log(`[TPD] Updated counter for ${baseDomain}: ${domainData.count}`);
     }
     
     // Trigger counter animation
@@ -237,7 +189,7 @@ class ThirdPartyDomainTracker {
     }, 600);
   }
 
-  // =================== TIMEOUT MANAGEMENT (Consumer only) ===================
+  // =================== TIMEOUT MANAGEMENT ===================
   
   setDomainTimeout(baseDomain) {
     const timeoutId = setTimeout(() => {
@@ -247,7 +199,7 @@ class ThirdPartyDomainTracker {
     this.domainTimeouts.set(baseDomain, timeoutId);
     
     if (this.debugMode) {
-      console.log(`[TPD Consumer] Set timeout for: ${baseDomain}`);
+      console.log(`[TPD] Set timeout for: ${baseDomain}`);
     }
   }
 
@@ -258,7 +210,7 @@ class ThirdPartyDomainTracker {
       this.domainTimeouts.delete(baseDomain);
       
       if (this.debugMode) {
-        console.log(`[TPD Consumer] Cleared timeout for: ${baseDomain}`);
+        console.log(`[TPD] Cleared timeout for: ${baseDomain}`);
       }
     }
   }
@@ -267,13 +219,13 @@ class ThirdPartyDomainTracker {
     const domainData = this.displayedDomains.get(baseDomain);
     if (!domainData) {
       if (this.debugMode) {
-        console.log(`[TPD Consumer] Attempted to remove non-existent domain: ${baseDomain}`);
+        console.log(`[TPD] Attempted to remove non-existent domain: ${baseDomain}`);
       }
       return;
     }
 
     if (this.debugMode) {
-      console.log(`[TPD Consumer] Removing domain: ${baseDomain}`);
+      console.log(`[TPD] Removing domain: ${baseDomain}`);
     }
 
     const tag = domainData.element;
@@ -328,10 +280,9 @@ class ThirdPartyDomainTracker {
     this.displayedDomains.clear();
     this.domainTimeouts.clear();
     this.subdomainCounts.clear();
-    this.domainQueue.length = 0; // Clear queue
     
     if (this.debugMode) {
-      console.log(`[TPD Consumer] All tags cleared`);
+      console.log(`[TPD] All tags cleared`);
     }
   }
 
@@ -430,14 +381,13 @@ class ThirdPartyDomainTracker {
   // =================== CLEANUP ===================
   
   destroy() {
-    // Stop consumer
-    if (this.processingInterval) {
-      clearInterval(this.processingInterval);
-      this.processingInterval = null;
-    }
-    
     // Clear all tags
     this.clearAllTags();
+    
+    // Remove global reference
+    if (window.thirdPartyDomainTracker === this) {
+      window.thirdPartyDomainTracker = null;
+    }
     
     if (this.debugMode) {
       console.log(`[TPD] Destroyed tracker`);
@@ -445,11 +395,29 @@ class ThirdPartyDomainTracker {
   }
 }
 
-// Initialize the tracker
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new ThirdPartyDomainTracker();
-  });
+// Prevent multiple instances
+if (window.thirdPartyDomainTracker) {
+  console.log('[TPD] Tracker already initialized');
 } else {
-  new ThirdPartyDomainTracker();
+
+  // Cleanup any existing containers
+  const existing = document.getElementById('tpd-monitor-container');
+  if (existing) {
+    existing.remove();
+    console.log('[TPD] Removed existing container');
+  }
+
+  // Safe initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.thirdPartyDomainTracker = new ThirdPartyDomainTracker();
+      console.log('[TPD] Tracker initialized after DOMContentLoaded');
+    });
+  } else {
+    window.thirdPartyDomainTracker = new ThirdPartyDomainTracker();
+    console.log('[TPD] Tracker initialized immediately');
+  }
+
 }
+
+

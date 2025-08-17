@@ -96,6 +96,7 @@ chrome.webRequest.onBeforeRequest.addListener(
       
       if (isThirdPartyDomain(requestDomain, tabDomain) && isTrackingDomain(details.url, requestDomain)) {
         const baseDomain = getBaseDomain(requestDomain);
+        console.log("new domain identified");
         chrome.tabs.sendMessage(details.tabId, {
           type: 'THIRD_PARTY_DOMAIN',
           domain: baseDomain,
