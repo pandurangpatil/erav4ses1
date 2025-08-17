@@ -1,0 +1,133 @@
+.tpd-container {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  max-width: 300px !important;
+  pointer-events: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+}
+
+.tpd-tag {
+  display: flex !important;
+  align-items: center !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 8px 12px !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.8) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  max-width: 280px !important;
+  word-break: break-word !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.tpd-tag.tpd-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.tpd-tag.tpd-removing {
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.8) !important;
+  transition: all 0.3s ease-in !important;
+}
+
+.tpd-tag.tpd-pulse {
+  animation: tpd-pulse-animation 0.3s ease-out !important;
+}
+
+@keyframes tpd-pulse-animation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.tpd-type {
+  margin-right: 6px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  opacity: 0.9 !important;
+}
+
+.tpd-domain-name {
+  flex: 1 !important;
+  margin-right: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.tpd-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  min-width: 16px !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.tpd-tag:nth-child(even) {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%) !important;
+}
+
+.tpd-tag:nth-child(3n) {
+  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important;
+}
+
+.tpd-tag:nth-child(4n) {
+  background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%) !important;
+}
+
+.tpd-tag:nth-child(5n) {
+  background: linear-gradient(135deg, #96fbc4 0%, #f9f586 100%) !important;
+}
+
+.tpd-tag:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.tpd-tag::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+  transition: left 0.5s !important;
+}
+
+.tpd-tag:hover::before {
+  left: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .tpd-container {
+    bottom: 10px !important;
+    right: 10px !important;
+    max-width: 250px !important;
+  }
+  
+  .tpd-tag {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+}
