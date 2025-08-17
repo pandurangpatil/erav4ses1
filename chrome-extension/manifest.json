@@ -28,6 +28,10 @@
     }
   ],
   
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: https://www.google.com;"
+  },
+  
   "action": {
     "default_popup": "popup.html",
     "default_title": "Toggle Third-Party Domain Monitor",

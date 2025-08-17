@@ -14,15 +14,15 @@
 .tpd-tag {
   display: flex !important;
   align-items: center !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
+  background: #FF8400 !important;
+  color: black !important;
   padding: 8px 12px !important;
   border-radius: 20px !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
   opacity: 0 !important;
   transform: translateX(100px) scale(0.8) !important;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
@@ -60,6 +60,14 @@
   opacity: 0.9 !important;
 }
 
+.tpd-favicon {
+  width: 16px !important;
+  height: 16px !important;
+  margin-right: 6px !important;
+  border-radius: 2px !important;
+  object-fit: contain !important;
+}
+
 .tpd-domain-name {
   flex: 1 !important;
   margin-right: 8px !important;
@@ -71,8 +79,8 @@
 }
 
 .tpd-count {
-  background: rgba(255, 255, 255, 0.25) !important;
-  color: white !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+  color: black !important;
   padding: 2px 6px !important;
   border-radius: 10px !important;
   font-size: 10px !important;
@@ -80,23 +88,46 @@
   min-width: 16px !important;
   text-align: center !important;
   line-height: 1.2 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
-.tpd-tag:nth-child(even) {
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%) !important;
+/* Color palette cycling through the 4 specified colors */
+.tpd-tag.color-orange {
+  background: #FF8400 !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
-.tpd-tag:nth-child(3n) {
-  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important;
+.tpd-tag.color-vista-bleu {
+  background: #8FA0D8 !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-.tpd-tag:nth-child(4n) {
-  background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%) !important;
+.tpd-tag.color-amande {
+  background: #F9DFC6 !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
-.tpd-tag:nth-child(5n) {
-  background: linear-gradient(135deg, #96fbc4 0%, #f9f586 100%) !important;
+.tpd-tag.color-bleu-oxford {
+  background: #0B0829 !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Count badge styling for light backgrounds */
+.tpd-tag.color-orange .tpd-count,
+.tpd-tag.color-amande .tpd-count {
+  background: rgba(0, 0, 0, 0.15) !important;
+  color: black !important;
+}
+
+/* Count badge styling for dark backgrounds */
+.tpd-tag.color-vista-bleu .tpd-count,
+.tpd-tag.color-bleu-oxford .tpd-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
 }
 
 .tpd-tag:hover {

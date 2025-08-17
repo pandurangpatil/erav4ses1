@@ -3,6 +3,8 @@ class ThirdPartyDomainTracker {
     this.container = null;
     this.domains = new Map();
     this.subdomainCounts = new Map();
+    this.faviconCache = new Map();
+    this.colorClasses = ['color-orange', 'color-vista-bleu', 'color-amande', 'color-bleu-oxford'];
     this.isEnabled = true;
     this.init();
   }
@@ -45,28 +47,83 @@ class ThirdPartyDomainTracker {
     });
   }
 
-  addDomainTag(baseDomain, fullDomain, resourceType) {
+  getDomainColorClass(domain) {
+    let hash = 0;
+    for (let i = 0; i < domain.length; i++) {
+      const char = domain.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const index = Math.abs(hash) % this.colorClasses.length;
+    return this.colorClasses[index];
+  }
+
+  getFaviconUrl(domain) {
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+  }
+
+  loadFavicon(domain) {
+    return new Promise((resolve) => {
+      if (this.faviconCache.has(domain)) {
+        resolve(this.faviconCache.get(domain));
+        return;
+      }
+
+      const faviconUrl = this.getFaviconUrl(domain);
+      const img = new Image();
+      
+      img.onload = () => {
+        this.faviconCache.set(domain, faviconUrl);
+        resolve(faviconUrl);
+      };
+      
+      img.onerror = () => {
+        const fallbackIcon = '🌐';
+        this.faviconCache.set(domain, fallbackIcon);
+        resolve(fallbackIcon);
+      };
+      
+      img.src = faviconUrl;
+      
+      setTimeout(() => {
+        if (!this.faviconCache.has(domain)) {
+          const fallbackIcon = '🌐';
+          this.faviconCache.set(domain, fallbackIcon);
+          resolve(fallbackIcon);
+        }
+      }, 3000);
+    });
+  }
+
+  async addDomainTag(baseDomain, fullDomain, resourceType) {
     if (!this.isEnabled) return;
 
     const existingTag = this.domains.get(baseDomain);
     if (existingTag) {
       clearTimeout(existingTag.timeout);
       this.updateTagCount(existingTag.element, baseDomain, fullDomain);
+      
+      const timeout = setTimeout(() => {
+        this.removeDomainTag(baseDomain);
+      }, 30000);
+      existingTag.timeout = timeout;
     } else {
-      this.createNewTag(baseDomain, fullDomain, resourceType);
+      await this.createNewTag(baseDomain, fullDomain, resourceType);
+      
+      const tag = this.domains.get(baseDomain);
+      if (tag) {
+        const timeout = setTimeout(() => {
+          this.removeDomainTag(baseDomain);
+        }, 30000);
+        tag.timeout = timeout;
+      }
     }
-
-    const tag = this.domains.get(baseDomain);
-    const timeout = setTimeout(() => {
-      this.removeDomainTag(baseDomain);
-    }, 30000);
-
-    tag.timeout = timeout;
   }
 
-  createNewTag(baseDomain, fullDomain, resourceType) {
+  async createNewTag(baseDomain, fullDomain, resourceType) {
     const tag = document.createElement('div');
-    tag.className = 'tpd-tag';
+    const colorClass = this.getDomainColorClass(baseDomain);
+    tag.className = `tpd-tag ${colorClass}`;
     tag.setAttribute('data-domain', baseDomain);
     
     const domainSpan = document.createElement('span');
@@ -77,12 +134,29 @@ class ThirdPartyDomainTracker {
     countSpan.className = 'tpd-count';
     countSpan.textContent = '1';
     
-    const typeSpan = document.createElement('span');
-    typeSpan.className = 'tpd-type';
-    typeSpan.textContent = this.getResourceTypeIcon(resourceType);
-    typeSpan.title = resourceType;
+    const iconContainer = document.createElement('span');
+    iconContainer.className = 'tpd-type';
     
-    tag.appendChild(typeSpan);
+    try {
+      const faviconSrc = await this.loadFavicon(baseDomain);
+      
+      if (faviconSrc.startsWith('http')) {
+        const favicon = document.createElement('img');
+        favicon.className = 'tpd-favicon';
+        favicon.src = faviconSrc;
+        favicon.alt = baseDomain;
+        favicon.title = `${baseDomain} - ${resourceType}`;
+        iconContainer.appendChild(favicon);
+      } else {
+        iconContainer.textContent = faviconSrc;
+        iconContainer.title = `${baseDomain} - ${resourceType}`;
+      }
+    } catch (error) {
+      iconContainer.textContent = '🌐';
+      iconContainer.title = `${baseDomain} - ${resourceType}`;
+    }
+    
+    tag.appendChild(iconContainer);
     tag.appendChild(domainSpan);
     tag.appendChild(countSpan);
     
@@ -152,17 +226,6 @@ class ThirdPartyDomainTracker {
     this.subdomainCounts.clear();
   }
 
-  getResourceTypeIcon(type) {
-    const icons = {
-      'script': '🔗',
-      'xmlhttprequest': '📡',
-      'image': '🖼️',
-      'stylesheet': '🎨',
-      'font': '🔤',
-      'media': '🎵'
-    };
-    return icons[type] || '📄';
-  }
 }
 
 if (document.readyState === 'loading') {
