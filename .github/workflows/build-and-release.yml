@@ -1,0 +1,137 @@
+name: Build and Release Chrome Extension
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Get current version
+      id: current_version
+      run: |
+        CURRENT_VERSION=$(jq -r '.version' chrome-extension/manifest.json)
+        echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $CURRENT_VERSION"
+    
+    - name: Calculate new version
+      id: new_version
+      run: |
+        CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]:-0}
+        PATCH=${VERSION_PARTS[2]:-0}
+        
+        # Increment patch version
+        NEW_PATCH=$((PATCH + 1))
+        NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+        
+        echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "New version: $NEW_VERSION"
+        echo "New tag: v$NEW_VERSION"
+    
+    - name: Update manifest.json version
+      run: |
+        NEW_VERSION="${{ steps.new_version.outputs.new }}"
+        jq --arg version "$NEW_VERSION" '.version = $version' chrome-extension/manifest.json > tmp.json
+        mv tmp.json chrome-extension/manifest.json
+        echo "Updated manifest.json to version $NEW_VERSION"
+    
+    - name: Commit version update
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add chrome-extension/manifest.json
+        git commit -m "Bump version to ${{ steps.new_version.outputs.new }}" || exit 0
+        git push
+    
+    - name: Create extension package
+      run: |
+        cd chrome-extension
+        zip -r "../third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip" . \
+          -x "*.git*" "*.DS_Store*" "node_modules/*" "*.log"
+        cd ..
+        echo "Created package: third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip"
+        ls -la *.zip
+    
+    - name: Create Git tag
+      run: |
+        git tag ${{ steps.new_version.outputs.tag }}
+        git push origin ${{ steps.new_version.outputs.tag }}
+    
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          COMMITS=$(git log --oneline --pretty=format:"- %s" -10)
+        else
+          COMMITS=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
+        fi
+        
+        # Create release notes
+        cat > release_notes.txt << EOF
+        ## Changes in this release
+        
+        $COMMITS
+        
+        ## Installation
+        1. Download the \`third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip\` file
+        2. Extract the ZIP file
+        3. Open Chrome and go to \`chrome://extensions/\`
+        4. Enable "Developer mode" in the top right
+        5. Click "Load unpacked" and select the extracted folder
+        
+        ## What's New
+        This Chrome extension monitors third-party tracking domains and displays them as beautiful animated tags in the bottom-right corner of web pages.
+        EOF
+        
+        echo "Generated release notes"
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.new_version.outputs.tag }}
+        name: "Release ${{ steps.new_version.outputs.new }}"
+        body_path: release_notes.txt
+        files: |
+          third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ steps.new_version.outputs.new }}
+        path: third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip
+        retention-days: 90
+    
+    - name: Build summary
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.new_version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag**: ${{ steps.new_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Package**: third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release**: [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
