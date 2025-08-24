@@ -27,10 +27,16 @@ function extractDomain(url) {
 function getBaseDomain(domain) {
   if (!domain) return null;
   const parts = domain.split('.');
-  if (parts.length >= 2) {
-    return parts.slice(-2).join('.');
+  if (parts.length < 2) return domain;
+  
+  // Check if second-to-last part suggests multi-part TLD (≤ 3 characters)
+  // This handles country code TLDs like .co.in, .com.au, .co.uk, .org.au
+  if (parts.length >= 3 && parts[parts.length - 2].length <= 3) {
+    return parts.slice(-3).join('.');
   }
-  return domain;
+  
+  // Default to 2-part domain for standard TLDs
+  return parts.slice(-2).join('.');
 }
 
 function isTrackingDomain(url, domain) {
@@ -69,14 +75,6 @@ function isTrackingDomain(url, domain) {
 
 function isThirdPartyDomain(requestDomain, tabDomain) {
   if (!requestDomain || !tabDomain) return false;
-  
-  const getBaseDomain = (domain) => {
-    const parts = domain.split('.');
-    if (parts.length >= 2) {
-      return parts.slice(-2).join('.');
-    }
-    return domain;
-  };
   
   return getBaseDomain(requestDomain) !== getBaseDomain(tabDomain);
 }
