@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.4)'
+        required: false
+        type: string
 
 jobs:
   build-and-release:
@@ -24,45 +29,62 @@ jobs:
       with:
         node-version: '18'
     
-    - name: Get current version
-      id: current_version
+    - name: Run Unit Tests
       run: |
-        CURRENT_VERSION=$(jq -r '.version' chrome-extension/manifest.json)
-        echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-        echo "Current version: $CURRENT_VERSION"
+        echo "## 🧪 Running Unit Tests" >> $GITHUB_STEP_SUMMARY
+        cd chrome-extension/tests
+        
+        # Run the comprehensive domain tag color tests
+        if node run-all-domain-tag-tests.js; then
+          echo "✅ All unit tests passed!" >> $GITHUB_STEP_SUMMARY
+          echo "Unit tests completed successfully"
+        else
+          echo "❌ Unit tests failed! Stopping release process." >> $GITHUB_STEP_SUMMARY
+          echo "::error::Unit tests failed. Release cannot proceed."
+          exit 1
+        fi
     
     - name: Calculate new version
       id: new_version
       run: |
-        CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
-        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
-        MAJOR=${VERSION_PARTS[0]}
-        MINOR=${VERSION_PARTS[1]:-0}
-        PATCH=${VERSION_PARTS[2]:-0}
-        
-        # Increment patch version
-        NEW_PATCH=$((PATCH + 1))
-        NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          # Use manual input version
+          NEW_VERSION="${{ github.event.inputs.version }}"
+          echo "Using manual version: $NEW_VERSION"
+        else
+          # Auto-increment based on latest git tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          LATEST_VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+          
+          IFS='.' read -ra VERSION_PARTS <<< "$LATEST_VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "Auto-incremented version from $LATEST_VERSION to $NEW_VERSION"
+        fi
         
         echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
         echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
         echo "New version: $NEW_VERSION"
         echo "New tag: v$NEW_VERSION"
     
-    - name: Update manifest.json version
+    - name: Generate production manifest.json
       run: |
         NEW_VERSION="${{ steps.new_version.outputs.new }}"
-        jq --arg version "$NEW_VERSION" '.version = $version' chrome-extension/manifest.json > tmp.json
-        mv tmp.json chrome-extension/manifest.json
-        echo "Updated manifest.json to version $NEW_VERSION"
-    
-    - name: Commit version update
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add chrome-extension/manifest.json
-        git commit -m "Bump version to ${{ steps.new_version.outputs.new }}" || exit 0
-        git push
+        cd chrome-extension
+        
+        echo "Original manifest version: $(jq -r '.version' manifest.json)"
+        
+        # Create production version of manifest.json (no commit to repo)
+        jq --arg version "$NEW_VERSION" '.version = $version' manifest.json > manifest.prod.json
+        mv manifest.prod.json manifest.json
+        
+        echo "Generated production manifest.json with version $NEW_VERSION"
+        echo "Production manifest version: $(jq -r '.version' manifest.json)"
     
     - name: Create extension package
       run: |
@@ -130,8 +152,11 @@ jobs:
     
     - name: Build summary
       run: |
-        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Unit Tests**: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
         echo "- **Version**: ${{ steps.new_version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Tag**: ${{ steps.new_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Package**: third-party-domain-monitor-${{ steps.new_version.outputs.new }}.zip" >> $GITHUB_STEP_SUMMARY
         echo "- **Release**: [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 **Release created successfully!** All quality gates passed." >> $GITHUB_STEP_SUMMARY

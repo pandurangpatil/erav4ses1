@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Third-Party Domain Monitor",
-  "version": "1.0.3",
+  "version": "0.0.1",
   "description": "Monitor and display third-party domain calls in a beautiful, non-intrusive way",
   "permissions": [
     "webRequest",

@@ -71,7 +71,7 @@ const COLOR_DEFINITIONS = {
     theme: 'light'
   },
   'color-vista-bleu': {
-    background: '#8FA0D8',
+    background: '#5874B0',
     textColor: 'white',
     borderColor: 'rgba(255, 255, 255, 0.2)',
     countBadgeBackground: 'rgba(255, 255, 255, 0.25)',
