@@ -71,9 +71,9 @@ const COLOR_DEFINITIONS = {
     theme: 'light'
   },
   'color-vista-bleu': {
-    background: '#5874B0',
+    background: '#4A628F',
     textColor: 'white',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     countBadgeBackground: 'rgba(255, 255, 255, 0.25)',
     countBadgeText: 'white',
     theme: 'dark'
@@ -87,9 +87,9 @@ const COLOR_DEFINITIONS = {
     theme: 'light'
   },
   'color-bleu-oxford': {
-    background: '#0B0829',
+    background: '#2E1065',
     textColor: 'white',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     countBadgeBackground: 'rgba(255, 255, 255, 0.25)',
     countBadgeText: 'white',
     theme: 'dark'

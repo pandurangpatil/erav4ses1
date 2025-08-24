@@ -117,6 +117,9 @@
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  /* Strong CSS specificity to prevent page style inheritance */
+  color: inherit !important;
+  text-shadow: none !important;
 }
 
 .tpd-count {
@@ -137,24 +140,56 @@
   background: #FF8400 !important;
   color: black !important;
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  /* Enhanced contrast for dark page backgrounds */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Enhanced text specificity for orange tags */
+.tpd-tag.color-orange .tpd-domain-name {
+  color: black !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3) !important;
 }
 
 .tpd-tag.color-vista-bleu {
-  background: #5874B0 !important;
+  background: #4A628F !important;
   color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  /* Enhanced visibility on various dark backgrounds */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Enhanced text specificity for vista-bleu tags */
+.tpd-tag.color-vista-bleu .tpd-domain-name {
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
 .tpd-tag.color-amande {
   background: #F9DFC6 !important;
   color: black !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  /* Enhanced contrast for dark page backgrounds */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Enhanced text specificity for amande tags */
+.tpd-tag.color-amande .tpd-domain-name {
+  color: black !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4) !important;
 }
 
 .tpd-tag.color-bleu-oxford {
-  background: #0B0829 !important;
+  background: #2E1065 !important;
   color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  /* Enhanced visibility on very dark backgrounds */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Enhanced text specificity for bleu-oxford tags */
+.tpd-tag.color-bleu-oxford .tpd-domain-name {
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Count badge styling for light backgrounds */
