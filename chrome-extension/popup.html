@@ -102,6 +102,101 @@
       margin-top: 15px;
       line-height: 1.4;
     }
+    
+    /* Timeout Configuration Styles */
+    .timeout-config {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin: 15px 0;
+      backdrop-filter: blur(10px);
+    }
+    
+    .config-section {
+      margin-bottom: 12px;
+    }
+    
+    .config-label {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .config-note {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-bottom: 12px;
+    }
+    
+    .no-timeout-container {
+      margin-bottom: 15px;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+      margin-right: 8px;
+      transform: scale(1.2);
+    }
+    
+    .timeout-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 12px;
+      transition: opacity 0.3s ease;
+    }
+    
+    .timeout-section.hidden {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    
+    .input-group {
+      margin-bottom: 10px;
+    }
+    
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    
+    .timeout-input {
+      width: 60px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .timeout-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .help-text {
+      font-size: 10px;
+      opacity: 0.7;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    
+    .example-text {
+      font-size: 10px;
+      opacity: 0.6;
+      font-style: italic;
+      line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -121,8 +216,38 @@
     Loading...
   </div>
   
+  <div class="timeout-config">
+    <div class="config-section">
+      <div class="config-label">Timeout Configuration</div>
+      <div class="config-note">⚙️ Domain tag display timeout is configurable</div>
+    </div>
+    
+    <div class="no-timeout-container">
+      <label class="checkbox-label">
+        <input type="checkbox" id="noTimeoutCheckbox">
+        <span class="checkmark"></span>
+        No Timeout - Keep tags until manually closed
+      </label>
+    </div>
+    
+    <div class="timeout-section" id="timeoutSection">
+      <div class="input-group">
+        <label for="timeoutInput" class="input-label">Auto-hide after (seconds):</label>
+        <input type="number" id="timeoutInput" min="1" max="300" value="5" class="timeout-input">
+      </div>
+      
+      <div class="help-text" id="timeoutHelp">
+        Domain tags auto-hide after specified seconds. Configure how long tracking domains remain visible.
+      </div>
+      
+      <div class="example-text" id="timeoutExample">
+        Example: 30 = tags disappear after 30 seconds
+      </div>
+    </div>
+  </div>
+  
   <div class="info">
-    When enabled, third-party domain calls will appear as tags in the bottom-right corner of web pages. Tags auto-remove after 1 minute.
+    When enabled, third-party domain calls will appear as tags in the bottom-right corner of web pages.
   </div>
   
   <script src="popup.js"></script>

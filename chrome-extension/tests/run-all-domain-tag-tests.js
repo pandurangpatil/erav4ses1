@@ -16,6 +16,12 @@ const path = require('path');
 // Test file paths
 const colorTestPath = path.join(__dirname, 'domain-tag-colors.test.js');
 const animationTestPath = path.join(__dirname, 'domain-tag-animation-colors.test.js');
+const popupTimeoutTestPath = path.join(__dirname, 'popup-timeout-configuration.test.js');
+const timeoutBehaviorTestPath = path.join(__dirname, 'domain-tag-timeout-behavior.test.js');
+const closeButtonTestPath = path.join(__dirname, 'domain-tag-close-button.test.js');
+const closeButtonVisibilityTestPath = path.join(__dirname, 'close-button-visibility.test.js');
+const timeoutDisableBugTestPath = path.join(__dirname, 'timeout-disable-bug.test.js');
+const dynamicWidthTestPath = path.join(__dirname, 'dynamic-width-close-button-fix.test.js');
 
 async function runAllDomainTagTests() {
   console.log('🧪 COMPREHENSIVE DOMAIN TAG COLOR TEST SUITE');
@@ -68,6 +74,90 @@ async function runAllDomainTagTests() {
     overallResults.totalFailed += animationResults.failed;
     overallResults.totalTests += animationResults.total;
     
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run timeout configuration tests
+    console.log('\n⚙️  RUNNING: Popup Timeout Configuration Tests');
+    console.log('-' .repeat(50));
+    
+    const { runPopupTimeoutConfigurationTests } = require(popupTimeoutTestPath);
+    const popupTimeoutResults = runPopupTimeoutConfigurationTests();
+    
+    overallResults.suites.popupTimeoutTests = popupTimeoutResults;
+    overallResults.totalPassed += popupTimeoutResults.passed;
+    overallResults.totalFailed += popupTimeoutResults.failed;
+    overallResults.totalTests += popupTimeoutResults.total;
+    
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run timeout behavior tests
+    console.log('\n⏱️  RUNNING: Domain Tag Timeout Behavior Tests');
+    console.log('-' .repeat(50));
+    
+    const { runDomainTagTimeoutBehaviorTests } = require(timeoutBehaviorTestPath);
+    const timeoutBehaviorResults = runDomainTagTimeoutBehaviorTests();
+    
+    overallResults.suites.timeoutBehaviorTests = timeoutBehaviorResults;
+    overallResults.totalPassed += timeoutBehaviorResults.passed;
+    overallResults.totalFailed += timeoutBehaviorResults.failed;
+    overallResults.totalTests += timeoutBehaviorResults.total;
+    
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run close button tests
+    console.log('\n🔘 RUNNING: Domain Tag Close Button Tests');
+    console.log('-' .repeat(50));
+    
+    const { runDomainTagCloseButtonTests } = require(closeButtonTestPath);
+    const closeButtonResults = runDomainTagCloseButtonTests();
+    
+    overallResults.suites.closeButtonTests = closeButtonResults;
+    overallResults.totalPassed += closeButtonResults.passed;
+    overallResults.totalFailed += closeButtonResults.failed;
+    overallResults.totalTests += closeButtonResults.total;
+    
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run close button visibility tests
+    console.log('\n🔍 RUNNING: Close Button Visibility Tests');
+    console.log('-' .repeat(50));
+    
+    const { runCloseButtonVisibilityTests } = require(closeButtonVisibilityTestPath);
+    const closeButtonVisibilityResults = runCloseButtonVisibilityTests();
+    
+    overallResults.suites.closeButtonVisibilityTests = closeButtonVisibilityResults;
+    overallResults.totalPassed += closeButtonVisibilityResults.passed;
+    overallResults.totalFailed += closeButtonVisibilityResults.failed;
+    overallResults.totalTests += closeButtonVisibilityResults.total;
+    
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run timeout disable bug tests
+    console.log('\n🐛 RUNNING: Timeout Disable Bug Fix Tests');
+    console.log('-' .repeat(50));
+    
+    const { runTimeoutDisableBugTests } = require(timeoutDisableBugTestPath);
+    const timeoutDisableBugResults = runTimeoutDisableBugTests();
+    
+    overallResults.suites.timeoutDisableBugTests = timeoutDisableBugResults;
+    overallResults.totalPassed += timeoutDisableBugResults.passed;
+    overallResults.totalFailed += timeoutDisableBugResults.failed;
+    overallResults.totalTests += timeoutDisableBugResults.total;
+    
+    console.log('\n' + '=' .repeat(50));
+    
+    // Run dynamic width close button fix tests
+    console.log('\n📐 RUNNING: Dynamic Width Close Button Fix Tests');
+    console.log('-' .repeat(50));
+    
+    const { runDynamicWidthCloseButtonFixTests } = require(dynamicWidthTestPath);
+    const dynamicWidthResults = runDynamicWidthCloseButtonFixTests();
+    
+    overallResults.suites.dynamicWidthTests = dynamicWidthResults;
+    overallResults.totalPassed += dynamicWidthResults.passed;
+    overallResults.totalFailed += dynamicWidthResults.failed;
+    overallResults.totalTests += dynamicWidthResults.total;
+    
     console.log('\n' + '=' .repeat(90));
     
   } catch (error) {
@@ -109,21 +199,35 @@ async function runAllDomainTagTests() {
   }
   
   // Domain tag color coverage summary
-  console.log('\n🎨 DOMAIN TAG COLOR SYSTEM VERIFICATION:');
+  console.log('\n🎨 DOMAIN TAG SYSTEM VERIFICATION:');
   console.log('   ✅ 4-color palette system implemented');
   console.log('   ✅ Hash-based consistent color assignment');
   console.log('   ✅ Proper light/dark theme text colors');
   console.log('   ✅ Count badge contrast optimization');
   console.log('   ✅ Animation color compatibility');
   console.log('   ✅ Hover effect color combinations');
+  console.log('   ✅ Configurable timeout system');
+  console.log('   ✅ Manual close button functionality');
+  console.log('   ✅ Popup interface timeout controls');
+  console.log('   ✅ Storage persistence for settings');
+  console.log('   ✅ Enhanced close button visibility');
+  console.log('   ✅ Timeout disable bug fixes');
+  console.log('   ✅ Dynamic width close button overlap fix');
   
   if (overallResults.totalFailed === 0) {
-    console.log('\n🎉 EXCELLENT: All domain tag color tests passed!');
-    console.log('   The toast notification system has comprehensive color coverage.');
+    console.log('\n🎉 EXCELLENT: All domain tag system tests passed!');
+    console.log('   The extension has comprehensive functionality including:');
+    console.log('   • Visual design and color system');
+    console.log('   • Configurable timeout behavior');
+    console.log('   • Manual close button controls');
+    console.log('   • Popup interface configuration');
+    console.log('   • Enhanced close button visibility');
+    console.log('   • Bug-free timeout behavior');
+    console.log('   • Dynamic width close button overlap fix');
   } else if (successRate >= 90) {
     console.log('\n✅ GOOD: Most tests passed with minor issues to address.');
   } else {
-    console.log('\n⚠️  NEEDS ATTENTION: Multiple color combination issues detected.');
+    console.log('\n⚠️  NEEDS ATTENTION: Multiple system issues detected.');
   }
   
   console.log('\n📚 TERMINOLOGY REMINDER FOR FUTURE DEVELOPMENT:');

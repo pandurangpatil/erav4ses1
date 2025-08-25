@@ -2,7 +2,11 @@ let isEnabled = true;
 let tabDomains = new Map();
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ enabled: true });
+  chrome.storage.local.set({ 
+    enabled: true,
+    timeoutSeconds: 5,
+    enableTimeout: true
+  });
 });
 
 chrome.storage.local.get(['enabled'], (result) => {
