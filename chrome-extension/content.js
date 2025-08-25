@@ -4,6 +4,14 @@ class ThirdPartyDomainTracker {
     this.isEnabled = true;
     this.debugMode = true;
     
+    // Timeout configuration
+    this.timeoutDuration = 5000; // Default 5 seconds
+    this.enableTimeout = true;
+    
+    // Dynamic width configuration
+    this.MIN_TAG_WIDTH = 280; // pixels
+    this.MAX_TAG_WIDTH = 400; // pixels
+    
     // Domain state management (Chrome runtime handles single-threading)
     this.displayedDomains = new Map();        // Currently displayed domains
     this.domainTimeouts = new Map();          // Timeout IDs for each domain
@@ -20,6 +28,7 @@ class ThirdPartyDomainTracker {
     this.createContainer();
     this.setupMessageListener();
     this.checkEnabledState();
+    this.loadTimeoutSettings();
   }
 
   createContainer() {
@@ -39,6 +48,8 @@ class ThirdPartyDomainTracker {
           resourceType: message.resourceType,
           timestamp: Date.now()
         });
+      } else if (message.type === 'TIMEOUT_CHANGED') {
+        this.updateTimeoutSettings(message.timeoutSeconds, message.enableTimeout);
       }
     });
 
@@ -49,6 +60,11 @@ class ThirdPartyDomainTracker {
           this.clearAllTags();
         }
       }
+      if (changes.timeoutSeconds || changes.enableTimeout) {
+        const timeoutSeconds = changes.timeoutSeconds?.newValue || (this.timeoutDuration / 1000);
+        const enableTimeout = changes.enableTimeout?.newValue !== false;
+        this.updateTimeoutSettings(timeoutSeconds, enableTimeout);
+      }
     });
   }
 
@@ -58,6 +74,36 @@ class ThirdPartyDomainTracker {
         this.isEnabled = response.enabled;
       }
     });
+  }
+  
+  loadTimeoutSettings() {
+    chrome.storage.local.get(['timeoutSeconds', 'enableTimeout'], (result) => {
+      this.timeoutDuration = (result.timeoutSeconds || 5) * 1000;
+      this.enableTimeout = result.enableTimeout !== false;
+      
+      if (this.debugMode) {
+        console.log(`[TPD] Loaded timeout settings: ${this.timeoutDuration}ms, enabled: ${this.enableTimeout}`);
+      }
+    });
+  }
+  
+  updateTimeoutSettings(timeoutSeconds, enableTimeout) {
+    this.timeoutDuration = (timeoutSeconds || 5) * 1000;
+    this.enableTimeout = enableTimeout !== false;
+    
+    if (this.debugMode) {
+      console.log(`[TPD] Updated timeout settings: ${this.timeoutDuration}ms, enabled: ${this.enableTimeout}`);
+    }
+    
+    // Update existing tags based on timeout settings
+    if (this.enableTimeout) {
+      this.setTimeoutsForExistingTags();
+    } else {
+      this.clearAllTimeouts();
+    }
+    
+    // Ensure all existing tags have close buttons (always visible)
+    this.addCloseButtonsToExistingTags();
   }
 
   // =================== DOMAIN PROCESSING (Chrome runtime single-threaded) ===================
@@ -94,8 +140,10 @@ class ThirdPartyDomainTracker {
     this.updateDomainCounter(baseDomain, existingDomain);
     
     
-    // Set fresh timeout
-    this.setDomainTimeout(baseDomain);
+    // Set fresh timeout only if timeout is enabled
+    if (this.enableTimeout && this.timeoutDuration > 0) {
+      this.setDomainTimeout(baseDomain);
+    }
   }
 
   createNewDomain(baseDomain, fullDomain, resourceType) {
@@ -117,8 +165,10 @@ class ThirdPartyDomainTracker {
       // Initialize subdomain tracking
       this.subdomainCounts.set(baseDomain, new Set([fullDomain]));
       
-      // Set timeout for removal
-      this.setDomainTimeout(baseDomain);
+      // Set timeout for removal only if timeout is enabled and duration > 0
+      if (this.enableTimeout && this.timeoutDuration > 0) {
+        this.setDomainTimeout(baseDomain);
+      }
       
       // Load favicon in background (non-blocking)
       this.loadFaviconInBackground(baseDomain, tagElement);
@@ -134,6 +184,16 @@ class ThirdPartyDomainTracker {
     tag.className = `tpd-tag ${colorClass}`;
     tag.setAttribute('data-domain', baseDomain);
     
+    // Calculate and apply optimal width
+    const optimalWidth = this.calculateOptimalTagWidth(baseDomain, 1);
+    tag.style.width = `${optimalWidth}px`;
+    
+    // Create favicon container with placeholder
+    const iconContainer = document.createElement('span');
+    iconContainer.className = 'tpd-type';
+    iconContainer.textContent = '🌐'; // Placeholder icon
+    iconContainer.title = `${baseDomain} - ${resourceType}`;
+    
     // Create domain name span
     const domainSpan = document.createElement('span');
     domainSpan.className = 'tpd-domain-name';
@@ -144,16 +204,14 @@ class ThirdPartyDomainTracker {
     countSpan.className = 'tpd-count';
     countSpan.textContent = '1';
     
-    // Create favicon container with placeholder
-    const iconContainer = document.createElement('span');
-    iconContainer.className = 'tpd-type';
-    iconContainer.textContent = '🌐'; // Placeholder icon
-    iconContainer.title = `${baseDomain} - ${resourceType}`;
+    // Create close button (always visible regardless of timeout setting)
+    const closeButton = this.createCloseButton(baseDomain);
     
-    // Assemble tag
+    // Assemble tag in order: icon → domain → count → close button
     tag.appendChild(iconContainer);
     tag.appendChild(domainSpan);
     tag.appendChild(countSpan);
+    tag.appendChild(closeButton);
     
     // Add to DOM
     this.container.appendChild(tag);
@@ -170,8 +228,12 @@ class ThirdPartyDomainTracker {
     const countSpan = domainData.element.querySelector('.tpd-count');
     countSpan.textContent = domainData.count;
     
+    // Recalculate width for new count
+    const optimalWidth = this.calculateOptimalTagWidth(baseDomain, domainData.count);
+    domainData.element.style.width = `${optimalWidth}px`;
+    
     if (this.debugMode) {
-      console.log(`[TPD] Updated counter for ${baseDomain}: ${domainData.count}`);
+      console.log(`[TPD] Updated counter for ${baseDomain}: ${domainData.count}, width: ${optimalWidth}px`);
     }
     
     // Trigger counter animation
@@ -192,14 +254,21 @@ class ThirdPartyDomainTracker {
   // =================== TIMEOUT MANAGEMENT ===================
   
   setDomainTimeout(baseDomain) {
+    if (!this.enableTimeout || this.timeoutDuration <= 0) {
+      if (this.debugMode) {
+        console.log(`[TPD] Timeout disabled or zero, skipping timeout for: ${baseDomain}`);
+      }
+      return;
+    }
+    
     const timeoutId = setTimeout(() => {
       this.removeDomain(baseDomain);
-    }, 5000);
+    }, this.timeoutDuration);
     
     this.domainTimeouts.set(baseDomain, timeoutId);
     
     if (this.debugMode) {
-      console.log(`[TPD] Set timeout for: ${baseDomain}`);
+      console.log(`[TPD] Set timeout for: ${baseDomain} (${this.timeoutDuration}ms)`);
     }
   }
 
@@ -328,7 +397,120 @@ class ThirdPartyDomainTracker {
     });
   }
 
+  // =================== CLOSE BUTTON MANAGEMENT ===================
+  
+  createCloseButton(baseDomain) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tpd-close-btn';
+    closeBtn.textContent = '×';
+    closeBtn.setAttribute('aria-label', `Close ${baseDomain} tag`);
+    closeBtn.setAttribute('title', `Remove ${baseDomain} tag`);
+    
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.removeTagManually(baseDomain);
+    });
+    
+    return closeBtn;
+  }
+  
+  removeTagManually(baseDomain) {
+    if (this.debugMode) {
+      console.log(`[TPD] Manually removing domain: ${baseDomain}`);
+    }
+    
+    this.removeDomain(baseDomain);
+  }
+  
+  addCloseButtonsToExistingTags() {
+    this.displayedDomains.forEach((domainData, baseDomain) => {
+      const tag = domainData.element;
+      if (!tag.querySelector('.tpd-close-btn')) {
+        const closeButton = this.createCloseButton(baseDomain);
+        tag.insertBefore(closeButton, tag.firstChild);
+      }
+    });
+    
+    if (this.debugMode) {
+      console.log(`[TPD] Added close buttons to ${this.displayedDomains.size} existing tags`);
+    }
+  }
+  
+  removeCloseButtonsFromExistingTags() {
+    this.displayedDomains.forEach((domainData, baseDomain) => {
+      const tag = domainData.element;
+      const closeButton = tag.querySelector('.tpd-close-btn');
+      if (closeButton) {
+        closeButton.remove();
+      }
+    });
+    
+    if (this.debugMode) {
+      console.log(`[TPD] Removed close buttons from ${this.displayedDomains.size} existing tags`);
+    }
+  }
+  
+  clearAllTimeouts() {
+    this.domainTimeouts.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    this.domainTimeouts.clear();
+    
+    if (this.debugMode) {
+      console.log(`[TPD] Cleared all timeouts`);
+    }
+  }
+  
+  setTimeoutsForExistingTags() {
+    this.displayedDomains.forEach((domainData, baseDomain) => {
+      if (!this.domainTimeouts.has(baseDomain)) {
+        this.setDomainTimeout(baseDomain);
+      }
+    });
+    
+    if (this.debugMode) {
+      console.log(`[TPD] Set timeouts for ${this.displayedDomains.size} existing tags`);
+    }
+  }
+
   // =================== UTILITY METHODS ===================
+  
+  measureTextWidth(text, fontSize = 12) {
+    // Create temporary canvas to measure actual text width
+    if (!this.measurementCanvas) {
+      this.measurementCanvas = document.createElement('canvas');
+      this.measurementContext = this.measurementCanvas.getContext('2d');
+    }
+    
+    // Set font to match domain tag styling
+    this.measurementContext.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif`;
+    
+    return this.measurementContext.measureText(text).width;
+  }
+  
+  calculateOptimalTagWidth(domainText, count) {
+    // Calculate text content width
+    const domainWidth = this.measureTextWidth(domainText, 12);
+    const countText = count.toString();
+    const countWidth = this.measureTextWidth(countText, 10);
+    
+    // Add padding for:
+    // - Icon: ~22px (favicon + margin)
+    // - Left/right padding: ~24px (12px each side)
+    // - Count badge: max(30px, countWidth + 12px padding)
+    // - Close button inline: 18px + 6px margin = 24px
+    // - Extra margin for spacing: 16px
+    const iconWidth = 22;
+    const padding = 24;
+    const countBadgeWidth = Math.max(30, countWidth + 12);
+    const closeButtonSpace = 24; // Inline close button (18px + 6px margin)
+    const extraMargin = 16;
+    
+    const totalWidth = domainWidth + iconWidth + padding + countBadgeWidth + closeButtonSpace + extraMargin;
+    
+    // Apply min/max constraints
+    return Math.max(this.MIN_TAG_WIDTH, Math.min(this.MAX_TAG_WIDTH, Math.ceil(totalWidth)));
+  }
   
   getDomainColorClass(domain) {
     let hash = 0;
@@ -383,6 +565,12 @@ class ThirdPartyDomainTracker {
   destroy() {
     // Clear all tags
     this.clearAllTags();
+    
+    // Cleanup measurement canvas
+    if (this.measurementCanvas) {
+      this.measurementCanvas = null;
+      this.measurementContext = null;
+    }
     
     // Remove global reference
     if (window.thirdPartyDomainTracker === this) {

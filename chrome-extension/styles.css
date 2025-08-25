@@ -26,10 +26,12 @@
   opacity: 0 !important;
   transform: translateX(100px) scale(0.8) !important;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  max-width: 280px !important;
+  min-width: 280px !important;
+  max-width: 400px !important;
   word-break: break-word !important;
   position: relative !important;
   overflow: hidden !important;
+  pointer-events: auto !important;
 }
 
 .tpd-tag.tpd-visible {
@@ -116,7 +118,6 @@
   letter-spacing: 0.2px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
   /* Strong CSS specificity to prevent page style inheritance */
   color: inherit !important;
   text-shadow: none !important;
@@ -206,6 +207,55 @@
   color: white !important;
 }
 
+/* Close button styles - Inline positioning */
+.tpd-close-btn {
+  position: static !important;
+  margin-left: 6px !important;
+  width: 18px !important;
+  height: 18px !important;
+  background: #CC0000 !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 50% !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.15s ease !important;
+  pointer-events: auto !important;
+  opacity: 0.9 !important;
+}
+
+.tpd-close-btn:hover {
+  background: #FF0000 !important;
+  border-color: white !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+  opacity: 1 !important;
+}
+
+.tpd-close-btn:active {
+  transform: scale(0.95) !important;
+  background: #AA0000 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Enhanced visibility on all color backgrounds - simplified for inline style */
+.tpd-tag.color-orange .tpd-close-btn,
+.tpd-tag.color-amande .tpd-close-btn {
+  background: #AA0000 !important;
+}
+
+.tpd-tag.color-vista-bleu .tpd-close-btn,
+.tpd-tag.color-bleu-oxford .tpd-close-btn {
+  background: #CC0000 !important;
+}
+
 .tpd-tag:hover {
   transform: scale(1.02) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
@@ -230,10 +280,12 @@
   .tpd-container {
     bottom: 10px !important;
     right: 10px !important;
-    max-width: 250px !important;
+    max-width: 320px !important;
   }
   
   .tpd-tag {
+    min-width: 240px !important;
+    max-width: 320px !important;
     font-size: 11px !important;
     padding: 6px 10px !important;
   }
