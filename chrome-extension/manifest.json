@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Third-Party Domain Monitor",
+  "name": "Ghost Tracer",
   "version": "0.0.1",
-  "description": "Monitor and display third-party domain calls in a beautiful, non-intrusive way",
+  "description": "Trace and visualize third-party tracking domains with ghost-like transparency",
   "permissions": [
     "webRequest",
     "webNavigation",
@@ -34,7 +34,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Toggle Third-Party Domain Monitor",
+    "default_title": "Toggle Ghost Tracer",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
